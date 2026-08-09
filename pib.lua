@@ -1,4 +1,5 @@
 local Players = game:GetService("Players")
+local AvatarEditorService = game:GetService("AvatarEditorService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
@@ -21,8 +22,8 @@ ScreenGui.Parent = guiParent
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 350, 0, 560)
-MainFrame.Position = UDim2.new(0.5, -175, 0.5, -280)
+MainFrame.Size = UDim2.new(0, 400, 0, 560)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -280)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -60,13 +61,13 @@ SearchFrame.BackgroundTransparency = 1
 SearchFrame.Parent = MainFrame
 
 local PlayerInput = Instance.new("TextBox")
-PlayerInput.Size = UDim2.new(0.7, -5, 1, 0)
+PlayerInput.Size = UDim2.new(0.5, -5, 1, 0)
 PlayerInput.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
 PlayerInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-PlayerInput.PlaceholderText = "Enter Player Name..."
+PlayerInput.PlaceholderText = "Enter Username..."
 PlayerInput.Text = ""
 PlayerInput.Font = Enum.Font.Gotham
-PlayerInput.TextSize = 14
+PlayerInput.TextSize = 13
 PlayerInput.Parent = SearchFrame
 
 local InputCorner = Instance.new("UICorner")
@@ -74,18 +75,32 @@ InputCorner.CornerRadius = UDim.new(0, 6)
 InputCorner.Parent = PlayerInput
 
 local SearchBtn = Instance.new("TextButton")
-SearchBtn.Size = UDim2.new(0.3, 0, 1, 0)
-SearchBtn.Position = UDim2.new(0.7, 5, 0, 0)
+SearchBtn.Size = UDim2.new(0.25, -5, 1, 0)
+SearchBtn.Position = UDim2.new(0.5, 5, 0, 0)
 SearchBtn.BackgroundColor3 = Color3.fromRGB(130, 50, 200)
-SearchBtn.Text = "Fetch"
+SearchBtn.Text = "Server"
 SearchBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 SearchBtn.Font = Enum.Font.GothamBold
-SearchBtn.TextSize = 14
+SearchBtn.TextSize = 13
 SearchBtn.Parent = SearchFrame
 
 local SearchCorner = Instance.new("UICorner")
 SearchCorner.CornerRadius = UDim.new(0, 6)
 SearchCorner.Parent = SearchBtn
+
+local GlobalBtn = Instance.new("TextButton")
+GlobalBtn.Size = UDim2.new(0.25, -5, 1, 0)
+GlobalBtn.Position = UDim2.new(0.75, 5, 0, 0)
+GlobalBtn.BackgroundColor3 = Color3.fromRGB(200, 100, 50)
+GlobalBtn.Text = "Global"
+GlobalBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+GlobalBtn.Font = Enum.Font.GothamBold
+GlobalBtn.TextSize = 13
+GlobalBtn.Parent = SearchFrame
+
+local GlobalCorner = Instance.new("UICorner")
+GlobalCorner.CornerRadius = UDim.new(0, 6)
+GlobalCorner.Parent = GlobalBtn
 
 -- Scrolling List
 local ScrollingList = Instance.new("ScrollingFrame")
@@ -108,7 +123,7 @@ ListPadding.PaddingLeft = UDim.new(0, 5)
 ListPadding.PaddingRight = UDim.new(0, 5)
 ListPadding.Parent = ScrollingList
 
--- Bottom Buttons
+-- Bottom Buttons Layout
 local BottomFrame = Instance.new("Frame")
 BottomFrame.Size = UDim2.new(1, -20, 0, 150)
 BottomFrame.Position = UDim2.new(0, 10, 1, -155)
@@ -215,7 +230,7 @@ local function saveIDs(ids)
     end
 end
 
--- Render the list to the UI
+-- Render the list using AvatarEditorService
 local function renderItems(itemIDs)
     currentRenderedIDs = itemIDs
     
@@ -223,72 +238,110 @@ local function renderItems(itemIDs)
         if child:IsA("Frame") then child:Destroy() end
     end
     
-    TotalLabel.Text = "Calculating Total Value..."
+    if #itemIDs == 0 then
+        TotalLabel.Text = "No items found."
+        TotalLabel.TextColor3 = Color3.fromRGB(200, 50, 50)
+        return
+    end
+
+    TotalLabel.Text = "Fetching Items via AvatarEditorService..."
     TotalLabel.TextColor3 = Color3.fromRGB(150, 255, 150)
     local totalValue = 0
     
     task.spawn(function()
-        for _, id in ipairs(itemIDs) do
-            local success, info = pcall(function()
-                return MarketplaceService:GetProductInfo(id, Enum.InfoType.Asset)
-            end)
-            
-            local price = (success and info.PriceInRobux) or 0
-            local name = (success and info.Name) or "Unknown Item"
-            totalValue = totalValue + price
-            
-            local card = Instance.new("Frame")
-            card.Size = UDim2.new(1, 0, 0, 40)
-            card.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-            card.BorderSizePixel = 0
-            card.Parent = ScrollingList
-            
-            local cCorner = Instance.new("UICorner")
-            cCorner.CornerRadius = UDim.new(0, 4)
-            cCorner.Parent = card
-            
-            local nameLabel = Instance.new("TextLabel")
-            nameLabel.Size = UDim2.new(0.7, -10, 0.5, 0)
-            nameLabel.Position = UDim2.new(0, 5, 0, 2)
-            nameLabel.BackgroundTransparency = 1
-            nameLabel.Text = name
-            nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-            nameLabel.TextSize = 14
-            nameLabel.Font = Enum.Font.Gotham
-            nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-            nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-            nameLabel.Parent = card
-            
-            local idLabel = Instance.new("TextLabel")
-            idLabel.Size = UDim2.new(0.7, -10, 0.5, 0)
-            idLabel.Position = UDim2.new(0, 5, 0.5, -2)
-            idLabel.BackgroundTransparency = 1
-            idLabel.Text = "ID: " .. tostring(id)
-            idLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-            idLabel.TextSize = 12
-            idLabel.Font = Enum.Font.Gotham
-            idLabel.TextXAlignment = Enum.TextXAlignment.Left
-            idLabel.Parent = card
-            
-            local priceLabel = Instance.new("TextLabel")
-            priceLabel.Size = UDim2.new(0.3, -5, 1, 0)
-            priceLabel.Position = UDim2.new(0.7, 0, 0, 0)
-            priceLabel.BackgroundTransparency = 1
-            priceLabel.Text = price > 0 and ("R$ " .. tostring(price)) or "Off-sale"
-            priceLabel.TextColor3 = price > 0 and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(200, 200, 200)
-            priceLabel.TextSize = 14
-            priceLabel.Font = Enum.Font.GothamBold
-            priceLabel.TextXAlignment = Enum.TextXAlignment.Right
-            priceLabel.Parent = card
+        local success, details = pcall(function()
+            return AvatarEditorService:GetBatchItemDetails(itemIDs, Enum.AvatarItemType.Asset)
+        end)
+        
+        if success and details then
+            for _, info in ipairs(details) do
+                local price = info.Price or 0
+                local name = info.Name or "Unknown Item"
+                local id = info.Id
+                totalValue = totalValue + price
+                
+                local card = Instance.new("Frame")
+                card.Size = UDim2.new(1, 0, 0, 50)
+                card.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+                card.BorderSizePixel = 0
+                card.Parent = ScrollingList
+                
+                local cCorner = Instance.new("UICorner")
+                cCorner.CornerRadius = UDim.new(0, 4)
+                cCorner.Parent = card
+                
+                -- Image
+                local icon = Instance.new("ImageLabel")
+                icon.Size = UDim2.new(0, 40, 0, 40)
+                icon.Position = UDim2.new(0, 5, 0, 5)
+                icon.BackgroundTransparency = 1
+                icon.Image = "rbxthumb://type=Asset&id=" .. tostring(id) .. "&w=150&h=150"
+                icon.Parent = card
+                
+                -- Name & ID Layout
+                local nameLabel = Instance.new("TextLabel")
+                nameLabel.Size = UDim2.new(0.5, -10, 0.5, 0)
+                nameLabel.Position = UDim2.new(0, 55, 0, 5)
+                nameLabel.BackgroundTransparency = 1
+                nameLabel.Text = name
+                nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                nameLabel.TextSize = 14
+                nameLabel.Font = Enum.Font.Gotham
+                nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+                nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+                nameLabel.Parent = card
+                
+                local idLabel = Instance.new("TextLabel")
+                idLabel.Size = UDim2.new(0.5, -10, 0.5, 0)
+                idLabel.Position = UDim2.new(0, 55, 0.5, -5)
+                idLabel.BackgroundTransparency = 1
+                idLabel.Text = "ID: " .. tostring(id)
+                idLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+                idLabel.TextSize = 12
+                idLabel.Font = Enum.Font.Gotham
+                idLabel.TextXAlignment = Enum.TextXAlignment.Left
+                idLabel.Parent = card
+                
+                -- Price Layout
+                local priceLabel = Instance.new("TextLabel")
+                priceLabel.Size = UDim2.new(0.2, 0, 1, 0)
+                priceLabel.Position = UDim2.new(0.55, 0, 0, 0)
+                priceLabel.BackgroundTransparency = 1
+                priceLabel.Text = price > 0 and ("R$" .. tostring(price)) or "Off-sale"
+                priceLabel.TextColor3 = price > 0 and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(200, 200, 200)
+                priceLabel.TextSize = 14
+                priceLabel.Font = Enum.Font.GothamBold
+                priceLabel.TextXAlignment = Enum.TextXAlignment.Right
+                priceLabel.Parent = card
+                
+                -- Native Buy Prompt Button
+                local singleBuyBtn = Instance.new("TextButton")
+                singleBuyBtn.Size = UDim2.new(0, 55, 0, 28)
+                singleBuyBtn.Position = UDim2.new(1, -65, 0.5, -14)
+                singleBuyBtn.BackgroundColor3 = price > 0 and Color3.fromRGB(50, 180, 75) or Color3.fromRGB(100, 100, 100)
+                singleBuyBtn.Text = "Buy"
+                singleBuyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                singleBuyBtn.Font = Enum.Font.GothamBold
+                singleBuyBtn.TextSize = 13
+                singleBuyBtn.Parent = card
+                
+                local btnCorner = Instance.new("UICorner")
+                btnCorner.CornerRadius = UDim.new(0, 4)
+                btnCorner.Parent = singleBuyBtn
+                
+                singleBuyBtn.MouseButton1Click:Connect(function()
+                    if price > 0 then
+                        pcall(function()
+                            MarketplaceService:PromptPurchase(LocalPlayer, id)
+                        end)
+                    end
+                end)
+            end
             
             ScrollingList.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y + 10)
             TotalLabel.Text = "Total Value: R$ " .. tostring(totalValue)
-            
-            task.wait(0.05)
-        end
-        
-        if #itemIDs == 0 then
-            TotalLabel.Text = "No items found."
+        else
+            TotalLabel.Text = "Failed to load via AvatarEditorService."
             TotalLabel.TextColor3 = Color3.fromRGB(200, 50, 50)
         end
     end)
@@ -320,7 +373,7 @@ SearchBtn.MouseButton1Click:Connect(function()
 
     local target = getPlayerFromString(query)
     if target then
-        Title.Text = "Viewing: " .. target.DisplayName
+        Title.Text = "Viewing (Server): " .. target.DisplayName
         local ids = getAvatarIDsFromPlayer(target)
         if #ids > 0 then
             renderItems(ids)
@@ -330,9 +383,51 @@ SearchBtn.MouseButton1Click:Connect(function()
             renderItems({})
         end
     else
-        TotalLabel.Text = "Player not found!"
+        TotalLabel.Text = "Player not found in server!"
         TotalLabel.TextColor3 = Color3.fromRGB(200, 50, 50)
     end
+end)
+
+GlobalBtn.MouseButton1Click:Connect(function()
+    local query = PlayerInput.Text
+    if query == "" then
+        Title.Text = "Viewing: Your Avatar"
+        renderItems(getAvatarIDsFromPlayer(LocalPlayer) or {})
+        return
+    end
+    
+    TotalLabel.Text = "Fetching Global User..."
+    TotalLabel.TextColor3 = Color3.fromRGB(200, 200, 50)
+    
+    task.spawn(function()
+        local success, userId = pcall(function()
+            return Players:GetUserIdFromNameAsync(query)
+        end)
+        
+        if success and userId then
+            local s2, desc = pcall(function()
+                return Players:GetHumanoidDescriptionFromUserId(userId)
+            end)
+            
+            if s2 and desc then
+                Title.Text = "Viewing (Global): " .. query
+                local ids = extractIDs(desc)
+                if #ids > 0 then
+                    renderItems(ids)
+                else
+                    TotalLabel.Text = "User has no items equipped."
+                    TotalLabel.TextColor3 = Color3.fromRGB(200, 50, 50)
+                    renderItems({})
+                end
+            else
+                TotalLabel.Text = "Failed to load global avatar."
+                TotalLabel.TextColor3 = Color3.fromRGB(200, 50, 50)
+            end
+        else
+            TotalLabel.Text = "User not found!"
+            TotalLabel.TextColor3 = Color3.fromRGB(200, 50, 50)
+        end
+    end)
 end)
 
 CopyBtn.MouseButton1Click:Connect(function()
